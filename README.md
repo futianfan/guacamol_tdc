@@ -73,7 +73,7 @@ export PATH=$PATH:/project/molecular_data/graphnn/docking/autodock_vina_1_1_2_li
 cd /project/molecular_data/graphnn/pyscreener 
 
 
-python -m graph_ga.goal_directed_generation
+# python -m graph_ga.goal_directed_generation
 
 python graph_ga_run.py
 
