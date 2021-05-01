@@ -62,11 +62,16 @@ def load_model(model_class, model_definition, model_weights, device, copy_to_cpu
         Returns: an RNN model
 
         """
-    json_in = open(model_definition).read()
+    # import gzip 
+    # json_in = gzip.open(model_definition).read()
+    json_in = open("/project/molecular_data/graphnn/pyscreener/smiles_lstm_hc/pretrained_model/model_final_0.473.json").read()
     raw_dict = json.loads(json_in)
     model = model_class(**raw_dict)
     map_location = lambda storage, loc: storage if copy_to_cpu else None
-    model.load_state_dict(torch.load(model_weights, map_location))
+    # weight = torch.load(model_weights)
+    weight = torch.load("/project/molecular_data/graphnn/pyscreener/smiles_lstm_hc/pretrained_model/model_final_0.473.pt")
+    model.load_state_dict(weight)
+    # model.load_state_dict(torch.load(model_weights, map_location))
     return model.to(device)
 
 

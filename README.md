@@ -52,6 +52,7 @@ oracle init and call: `guacamol/guacamol/common_scoring_functions.py`
 
 ## local 
 ```bash
+cd /Users/futianfan/Downloads/spring2021/guacamol_tdc
 ./upload.sh 
 ```
 
@@ -65,28 +66,22 @@ oracle init and call: `guacamol/guacamol/common_scoring_functions.py`
 ```bash
 cd /project/molecular_data/graphnn/guacamol_tdc/guacamol 
 python setup.py install 
+```
 
 
+### graph ga
+```bash
 source activate guacamol_baselines
 export PATH=$PATH:/project/molecular_data/graphnn/docking/ADFRsuite_installed_directory/bin
 export PATH=$PATH:/project/molecular_data/graphnn/docking/autodock_vina_1_1_2_linux_x86/bin
 cd /project/molecular_data/graphnn/pyscreener 
 
-
-# python -m graph_ga.goal_directed_generation
-
-python graph_ga_run.py
+python graph_ga_run.py  
 
 ```
 
 
-
-
-
-
-
-
-
+### smiles lstm 
 ```bash
 cd /project/molecular_data/graphnn/guacamol_tdc/guacamol 
 python setup.py install 
@@ -97,5 +92,32 @@ export PATH=$PATH:/project/molecular_data/graphnn/docking/ADFRsuite_installed_di
 export PATH=$PATH:/project/molecular_data/graphnn/docking/autodock_vina_1_1_2_linux_x86/bin
 cd /project/molecular_data/graphnn/pyscreener 
 
+python run_smiles_lstm_hc.py  
 
 ```
+
+
+### result analysis
+
+```bash
+
+cd /Users/futianfan/Downloads/spring2021/guacamol_tdc
+./download.sh 
+python results/analysis.py 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

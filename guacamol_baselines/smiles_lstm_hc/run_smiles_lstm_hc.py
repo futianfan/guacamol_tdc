@@ -3,18 +3,35 @@ from typing import List, Optional
 
 import joblib
 import torch
-
-# from guacamol.goal_directed_generator import GoalDirectedGenerator
+from random import random
+from guacamol.goal_directed_generator import GoalDirectedGenerator
 # from guacamol.scoring_function import ScoringFunction
 from guacamol.utils.chemistry import canonicalize_list, canonicalize
 from joblib import delayed
 
-from .rnn_generator import SmilesRnnMoleculeGenerator
-from .rnn_utils import load_rnn_model
+from smiles_lstm_hc.rnn_generator import SmilesRnnMoleculeGenerator
+from smiles_lstm_hc.rnn_utils import load_rnn_model
+
+from tdc import Oracle 
+drd3_oracle = Oracle(name = 'Docking_Score', software='vina', 
+                pyscreener_path = '/project/molecular_data/graphnn/pyscreener', 
+                receptors=['/project/molecular_data/graphnn/pyscreener/testing_inputs/DRD3.pdb'], 
+                center=(9, 22.5, 26), size=(15, 15, 15),
+                buffer=10, path='/project/molecular_data/graphnn/pyscreener/my_test/', num_worker=1, ncpu=10)
+
+global oracle_num 
+oracle_num = 0
+def drd3_docking_oracle(smiles):
+    # oracle_num += 1
+    # print('Docking call', oracle_num)
+    return min(max(-drd3_oracle(smiles)/15.0,0),1)
+
+# def drd3_docking_oracle(smiles):
+#     return random() 
 
 
 class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
-    def __init__(self, pretrained_model_path: str, n_epochs=4, mols_to_sample=1028, keep_top=512,
+    def __init__(self, pretrained_model_path: str, n_epochs=4, mols_to_sample=100, keep_top=512,
                  optimize_n_epochs=2, max_len=100, optimize_batch_size=64, number_final_samples=1028,
                  sample_final_model_only=False, random_start=False, smi_file=None, n_jobs=-1) -> None:
         self.pretrained_model_path = pretrained_model_path
@@ -42,23 +59,27 @@ class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
         scored_smiles = sorted(scored_smiles, key=lambda x: x[0], reverse=True)
         return [smile for score, smile in scored_smiles][:k]
 
-    def generate_optimized_molecules(self, scoring_function: ScoringFunction, number_molecules: int,
+    def generate_optimized_molecules(self, scoring_function, number_molecules: int,
                                      starting_population: Optional[List[str]] = None) -> List[str]:
 
         # fetch initial population?
-        if starting_population is None:
-            print('selecting initial population...')
-            if self.random_start:
-                starting_population = []
-            else:
-                all_smiles = self.load_smiles_from_file(self.smi_file)
-                starting_population = self.top_k(all_smiles, scoring_function, self.mols_to_sample)
+        # if starting_population is None:
+        #     print('selecting initial population...')
+        #     if self.random_start:
+        #         starting_population = []
+        #     else:
+        #         all_smiles = self.load_smiles_from_file(self.smi_file)
+        #         starting_population = self.top_k(all_smiles, scoring_function, self.mols_to_sample)
+
+        starting_population = []
 
         cuda_available = torch.cuda.is_available()
         device = "cuda" if cuda_available else "cpu"
         model_def = Path(self.pretrained_model_path).with_suffix('.json')
 
+
         model = load_rnn_model(model_def, self.pretrained_model_path, device, copy_to_cpu=True)
+
 
         generator = SmilesRnnMoleculeGenerator(model=model,
                                                max_len=self.max_len,
@@ -81,7 +102,15 @@ class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
 
         # calculate the scores and return the best ones
         samples = canonicalize_list(samples)
-        scores = scoring_function.score_list(samples)
+        # scores = scoring_function.score_list(samples)
+        scores = []
+        for smiles in samples:
+            try:
+                score = scoring_function(smiles)
+            except:
+                score = 0.0 
+            scores.append(score)
+
 
         scored_molecules = zip(samples, scores)
         sorted_scored_molecules = sorted(scored_molecules, key=lambda x: (x[1], hash(x[0])), reverse=True)
@@ -92,7 +121,12 @@ class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
 
 
 
-
+# model = SmilesRnnDirectedGenerator(pretrained_model_path = 'smiles_lstm_hc/pretrained_model/model_final_0.473.json')
+model = SmilesRnnDirectedGenerator(pretrained_model_path = 'smiles_lstm_hc/pretrained_model/model_final_0.473.json', 
+                                   n_epochs=5000, 
+                                   mols_to_sample=100, 
+                                   )
+model.generate_optimized_molecules(scoring_function = drd3_docking_oracle, number_molecules = 100)
 
 
 

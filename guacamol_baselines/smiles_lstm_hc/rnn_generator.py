@@ -6,8 +6,8 @@ from typing import List, Set
 import numpy as np
 import torch
 import torch.nn as nn
-
-from guacamol.scoring_function import ScoringFunction
+import pickle 
+# from guacamol.scoring_function import ScoringFunction
 from guacamol.utils.chemistry import canonicalize_list
 
 from .rnn_model import SmilesRnn
@@ -18,6 +18,8 @@ from .rnn_utils import get_tensor_dataset, load_smiles_from_list
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+
+from tqdm import tqdm
 
 @total_ordering
 class OptResult:
@@ -59,7 +61,7 @@ class SmilesRnnMoleculeGenerator:
                                         optimizer=self.optimizer,
                                         device=self.device)
 
-    def optimise(self, objective: ScoringFunction, start_population, keep_top, n_epochs, mols_to_sample,
+    def optimise(self, objective, start_population, keep_top, n_epochs, mols_to_sample,
                  optimize_n_epochs, optimize_batch_size, pretrain_n_epochs) -> List[OptResult]:
         """
         Takes an objective and tries to optimise it
@@ -74,18 +76,21 @@ class SmilesRnnMoleculeGenerator:
         :return: Candidate molecules
         """
 
-        int_results = self.pretrain_on_initial_population(objective, start_population,
-                                                          pretrain_epochs=pretrain_n_epochs)
+        # int_results = self.pretrain_on_initial_population(objective, start_population,
+        #                                                   pretrain_epochs=pretrain_n_epochs)
 
         results: List[OptResult] = []
         seen: Set[str] = set()
 
-        for k in int_results:
-            if k.smiles not in seen:
-                results.append(k)
-                seen.add(k.smiles)
+        # for k in int_results:
+        #     if k.smiles not in seen:
+        #         results.append(k)
+        #         seen.add(k.smiles)
 
-        for epoch in range(1, 1 + n_epochs):
+        oracle_num = 0 
+        smiles2score = {}
+        result_folder = "/project/molecular_data/graphnn/pyscreener/smiles_lstm_hc/results/"
+        for epoch in tqdm(range(1, 1 + n_epochs)):
 
             t0 = time.time()
             samples = self.sampler.sample(self.model, mols_to_sample, max_seq_len=self.max_len)
@@ -97,7 +102,28 @@ class SmilesRnnMoleculeGenerator:
 
             seen.update(canonicalized_samples)
 
-            scores = objective.score_list(payload)
+
+            print('payload', len(payload))
+            # scores = objective.score_list(payload) 
+            scores = []
+            for smiles in payload:
+                if smiles not in smiles2score:
+                    try:
+                        score = objective(smiles)
+                    except:
+                        score = 0.0 
+                    oracle_num += 1 
+                    smiles2score[smiles] = score
+                    print('oracle_num', oracle_num)
+                    if oracle_num % 50 == 0:
+                        pickle.dump(smiles2score, open(result_folder + str(oracle_num) + '.pkl', 'wb'))
+                else:
+                    score = smiles2score[smiles]
+                scores.append(score)
+                
+
+
+
             int_results = [OptResult(smiles=smiles, score=score) for smiles, score in zip(payload, scores)]
 
             t2 = time.time()
@@ -151,7 +177,7 @@ class SmilesRnnMoleculeGenerator:
                                    max_seq_len=self.max_len)
 
     # TODO refactor, still has lots of duplication
-    def pretrain_on_initial_population(self, scoring_function: ScoringFunction,
+    def pretrain_on_initial_population(self, scoring_function,
                                        start_population, pretrain_epochs) -> List[OptResult]:
         """
         Takes an objective and tries to optimise it

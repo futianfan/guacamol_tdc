@@ -174,8 +174,12 @@ class GB_GA_Generator:
             if smiles in self.smiles2score:
                 score = self.smiles2score[smiles]
             else:
-                score = drd3_docking_oracle(smiles)
+                try:
+                    score = drd3_docking_oracle(smiles)
+                except:
+                    score = 0
                 self.oracle_num += 1 
+                print('docking number', self.oracle_num)
                 if self.oracle_num % 100 == 0:
                     pickle.dump(self.smiles2score, open(result_folder + str(self.oracle_num) + '.pkl', 'wb'))
                 self.smiles2score[smiles] = score 
@@ -207,8 +211,12 @@ class GB_GA_Generator:
                 if smiles in self.smiles2score:
                     score = self.smiles2score[smiles]
                 else:
-                    score = drd3_docking_oracle(smiles)
+                    try:
+                        score = drd3_docking_oracle(smiles)
+                    except:
+                        score = 0
                     self.oracle_num += 1 
+                    print('docking number', self.oracle_num)
                     if self.oracle_num % 100 == 0:
                         pickle.dump(self.smiles2score, open(result_folder + str(self.oracle_num) + '.pkl', 'wb'))
                     self.smiles2score[smiles] = score 
@@ -224,9 +232,9 @@ class GB_GA_Generator:
 
 
 ga = GB_GA_Generator(smi_file = "data/guacamol_v1_all.smiles", 
-                     population_size = 25, 
-                     offspring_size = 50, 
-                     generations = 10000, 
+                     population_size = 100, 
+                     offspring_size = 200, 
+                     generations = 100000, 
                      mutation_rate = 0.01, )
 
 ga.generate_optimized_molecules()
