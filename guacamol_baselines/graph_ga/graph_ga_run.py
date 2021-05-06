@@ -22,7 +22,7 @@ from rdkit.Chem.rdchem import Mol
 
 from graph_ga import crossover as co, mutate as mu
 
-result_folder = '/project/molecular_data/graphnn/pyscreener/graph_ga/results/'
+result_folder = '/project/molecular_data/graphnn/pyscreener/graph_ga/results.3/'
 
 
 from tdc import Oracle 
@@ -32,7 +32,15 @@ drd3_oracle = Oracle(name = 'Docking_Score', software='vina',
                 center=(9, 22.5, 26), size=(15, 15, 15),
                 buffer=10, path='/project/molecular_data/graphnn/pyscreener/my_test/', num_worker=1, ncpu=10)
 
+qed_oracle = Oracle(name='qed')
+
+# def drd3_docking_oracle(smiles):
+#     return max(-drd3_oracle(smiles),0)
+
 def drd3_docking_oracle(smiles):
+    qed = qed_oracle(smiles)
+    if qed < 0.2:
+        return 0.0 
     return max(-drd3_oracle(smiles),0)
 
 # def drd3_docking_oracle(smiles):

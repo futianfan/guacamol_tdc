@@ -89,7 +89,7 @@ class SmilesRnnMoleculeGenerator:
 
         oracle_num = 0 
         smiles2score = {}
-        result_folder = "/project/molecular_data/graphnn/pyscreener/smiles_lstm_hc/results/"
+        result_folder = "/project/molecular_data/graphnn/pyscreener/smiles_lstm_hc/results.run.3/"
         for epoch in tqdm(range(1, 1 + n_epochs)):
 
             t0 = time.time()

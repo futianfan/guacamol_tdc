@@ -100,13 +100,12 @@ python run_smiles_lstm_hc.py
 ### result analysis
 
 ```bash
-
 cd /Users/futianfan/Downloads/spring2021/guacamol_tdc
 ./download.sh 
 python results/analysis.py 
 ```
 
-
+pls see `results/smiles_lstm_hc.png` for results. 
 
 
 
